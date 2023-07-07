@@ -27,8 +27,8 @@ Known Issues:
     The application in 4000 would detect the negative number and report it as ZERO the scales
     has not been calibrated.
 """
-
-import ConfigParser, csv, time, serial
+# Python3 need configparser instead of ConfigParser
+import configparser, csv, time, serial
 
 
 def form_scales_pkt(scale_type, per_ch, mass):
@@ -40,6 +40,8 @@ def form_scales_pkt(scale_type, per_ch, mass):
         output_stream += ("D    : %6d Kg\r\n" % per_ch[3])
         output_stream += ("TOTAL: %6d Kg\r\n" % mass)
         output_stream += "\\\r\n"
+        # Alex: Convert the output to bytes to be allowed to transfer over serial in Python3
+        output_stream = bytes(output_stream, "utf-8")
     elif(scale_type == 6):
         output_stream = "/\r\n"
         output_stream += ("A    : %6d Kg\r\n" % per_ch[0])
@@ -50,6 +52,8 @@ def form_scales_pkt(scale_type, per_ch, mass):
         output_stream += ("F    : %6d Kg\r\n" % per_ch[5])
         output_stream += ("TOTAL: %6d Kg\r\n" % mass)
         output_stream += "\\\r\n"
+        # Alex: Convert the output to bytes to be allowed to transfer over serial in Python3
+        output_stream = bytes(output_stream, "utf-8")
 
     return output_stream;
 
@@ -65,7 +69,8 @@ def serial_data_write(port, baud, timeout, buf):
 
     try:
         ser.open()
-    except Exception, err: #serial.SerialException:
+    # Alex: Change exception formatting to be compliant with Python 3
+    except Exception as err: #serial.SerialException:
         print("Error sending data through serial port: " + str(err))
         exit()
 
@@ -77,8 +82,8 @@ def serial_data_write(port, baud, timeout, buf):
             ser.write(buf)
             ser.flush()
             print("Write data: \n%s" % buf)
-
-        except Exception, e:
+    # Alex: Change exception formatting to be compliant with Python 3
+        except Exception as e:
             print("Error communicating to serial: " + str(e))
     else:
         print("Cannot open serial port")
@@ -89,7 +94,8 @@ def serial_data_write(port, baud, timeout, buf):
 def serialize_data_from_file(input_file, device, baud, periodicity, num_of_ch):
     with open(('./' + input_file.strip('\'\"'))) as inputfile:
        inputData = csv.reader(inputfile)
-       inputData.next()
+       # Alex: Python3 CSV way for iterating next data
+       next(inputData)
        for row in inputData:
            total_mass = 0
            mass_per_ch = list()
@@ -109,7 +115,8 @@ def serialize_data_from_file(input_file, device, baud, periodicity, num_of_ch):
 
 
 def pacific_scale_sim():
-    configParser = ConfigParser.RawConfigParser()
+    # Alex: Rename library
+    configParser = configparser.RawConfigParser()
     configFilePath = r'scales_simulator_config.cfg'
     configParser.read(configFilePath)
 
