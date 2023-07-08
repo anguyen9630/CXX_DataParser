@@ -27,8 +27,6 @@ ScaleDataParser::ScaleDataParser(const char* cfgFilePath = NULL)
                 // Remove all empty spaces from the line
                 line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
 
-                //std::cout << "Current line: " << line << std::endl;
-
                 // Skip if line is empty or is a comment
                 if (line.empty() || line[0] == '#') continue;
 
@@ -43,13 +41,9 @@ ScaleDataParser::ScaleDataParser(const char* cfgFilePath = NULL)
 
                 // Get the name portion of the parameter
                 std::string paramName = line.substr(0, assignIndx);
-                
-                //std::cout << "Found Param: " << paramName << std::endl;
 
                 // Get the value portion of the parameter
                 std::string paramVal = line.substr(assignIndx+1);
-
-                //std::cout << "Found Value: " << paramVal << std::endl;
 
                 // Assign the value based on name
                 if (paramName == "dev")
