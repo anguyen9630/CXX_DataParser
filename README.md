@@ -1,5 +1,5 @@
-# CXX_DataParser
-C++ Serial Data Parser - MTData Trial
+# ScaleDataParser
+C++ Serial Data Parser for Pacific Scales - MTData Trial
 
 # Task Outline
 A simulator written in python, it will output a block of strings to a serial port every two seconds.
