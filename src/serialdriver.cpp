@@ -90,8 +90,7 @@ void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
 }
 
 /*
- * Read from serial port. Per configuration, block until at least
- * 2 bytes (/\) has been received.
+ * Read from serial port.
  */
 
 std::string SerialDriver::serialRead()
@@ -99,14 +98,14 @@ std::string SerialDriver::serialRead()
     // Declare a buffer
     char dataBuffer[256];
     // Read to buffer
-    int ret = read(serialPort, &dataBuffer, sizeof(dataBuffer));
+    int ret = 0;
+    while (!ret)
+    {
+        ret = read(serialPort, &dataBuffer, sizeof(dataBuffer));
+    }
     // Set the last part as 0
     dataBuffer[ret] = 0;
-    // Print the buffer
-    if (ret)
-    {
-        std::cout << dataBuffer;
-    }
+    
     return std::string(dataBuffer);
 }
 
