@@ -79,7 +79,12 @@ int main(int argc, char *argv[])
         ScaleDataParser parser(portPath, baudRate);
         std::cout << "Initalised parser! Serial port: " << parser.port();
         std::cout << " | Baud rate: " << parser.baud() << std::endl;
-
+        std::cout << "Reading from serial!" << std::endl;
+        while(true)
+        {
+            parser.serialDriver->serialRead();
+            //std::cout << parser.serialDriver->serialRead() << std::endl;
+        }
         return 0;
     }
     

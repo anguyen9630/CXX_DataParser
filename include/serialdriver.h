@@ -20,6 +20,7 @@ class SerialDriver
         // ----------------- Public Methods ----------------- //
         SerialDriver(const char* portPath, uint32_t baudRate);
         ~SerialDriver();
+        std::string serialRead();
        
     private:
         // --------------- Private Attributes --------------- //

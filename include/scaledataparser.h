@@ -16,6 +16,7 @@ class ScaleDataParser
 {
     public:
         // --------------- Public Attributes ---------------- //
+        SerialDriver*   serialDriver;
 
         // ----------------- Public Methods ----------------- //
         ScaleDataParser(std::string path, size_t baud);
@@ -30,8 +31,6 @@ class ScaleDataParser
         // Configuration attributes
         size_t          baudRate;
         std::string     serialPort;
-        SerialDriver*   serialDriver;
-
 
         // ----------------- Private Methods ---------------- //
 

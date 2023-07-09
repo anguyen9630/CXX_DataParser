@@ -48,40 +48,67 @@ void SerialDriver::OpenSerialPort(const char* portPath)
  */
 void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
 {
-    // Disable parity
-    serialCfg.c_cflag &= ~PARENB;
-    // Single stop bit
-    serialCfg.c_cflag &= ~CSTOPB;
-    // 8-bits per byte
-    serialCfg.c_cflag |= CS8;
-    // Disable RTS/CTS
-    serialCfg.c_cflag &= ~CRTSCTS;
-    // Turn on Read and Local
-    serialCfg.c_cflag |= CREAD | CLOCAL;
-    // Disable canonical
-    serialCfg.c_lflag &= ~ICANON;
-    // Disable echo
-    serialCfg.c_lflag &= ~ECHO;
-    // No need for INTR, QUIT, SUSP so disable
-    serialCfg.c_lflag &= ~ISIG;
-    // Disable sw flow control
-    serialCfg.c_iflag &= ~(IXON | IXOFF | IXANY);
-    // Only grab rawdata, no special handling
-    serialCfg.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
-    
-    // Return when at least 1 byte of data was received.
-    serialCfg.c_cc[VTIME] = 0;   
-    serialCfg.c_cc[VMIN] = 1;
+    // Get the default config
+    if(tcgetattr(serialPort, &serialCfg) != 0) 
+    {
+        std::string errMsg = ErrorMsg(errno, "Failed to get default termios config. You should NOT be here...");
+        throw errMsg;
+    }
+
+    serialCfg.c_cflag &= ~PARENB; // Clear parity bit, disabling parity (most common)
+    serialCfg.c_cflag &= ~CSTOPB; // Clear stop field, only one stop bit used in communication (most common)
+    serialCfg.c_cflag &= ~CSIZE; // Clear all bits that set the data size 
+    serialCfg.c_cflag |= CS8; // 8 bits per byte (most common)
+    serialCfg.c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control (most common)
+    serialCfg.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
+
+    serialCfg.c_lflag &= ~ICANON; // Canonical mode 
+    serialCfg.c_lflag &= ~(ECHO | ECHOE | ECHONL | ISIG); // Disable echo
+
+    serialCfg.c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
+    serialCfg.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL); // Disable any special handling of received bytes
+
+    serialCfg.c_oflag &= ~OPOST; // Prevent special interpretation of output bytes (e.g. newline chars)
+    serialCfg.c_oflag &= ~ONLCR; // Prevent conversion of newline to carriage return/line feed
+
+    speed_t baudSpeedT = ToBaud(baudRate);
+
+    serialCfg.c_cc[VTIME] = 10;    
+    serialCfg.c_cc[VMIN] = 0;
 
     // Set baud rate
-    cfsetspeed(&serialCfg, ToBaud(baudRate));
-
+    cfsetispeed(&serialCfg, baudSpeedT);
+    cfsetospeed(&serialCfg, baudSpeedT);
 
     // Save config
-    if (tcsetattr(serialPort, TCSANOW, &serialCfg) != 0) {
+    if (tcsetattr(serialPort, TCSANOW, &serialCfg) != 0) 
+    {
         std::string errMsg = ErrorMsg(errno, "Failed to configure the serial port (How did this even happen...?)");
         throw errMsg;
     }
+}
+
+/*
+ * Read from serial port. Per configuration, block until at least
+ * 2 bytes (/\) has been received.
+ */
+
+std::string SerialDriver::serialRead()
+{
+    char dataBuffer[256];
+
+    
+    int ret = read(serialPort, &dataBuffer, sizeof(dataBuffer));
+
+    
+
+    if (ret)
+    {
+        std::cout << dataBuffer << std::endl;
+    }
+        
+    
+    return std::string(dataBuffer);
 }
 
 
