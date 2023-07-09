@@ -101,9 +101,9 @@ void ScaleDataParser::ParseConfig(const char* cfgFilePath)
         }
             
         if (!portFound)
-            std::cout << "Warning: Serial port not found in config file. Using default: " << serialPort << std::endl;
+            std::cout << "Warning: Serial port not found in config file. Using default [/dev/ttyUSB0]: " << serialPort << std::endl;
         if (!baudFound)
-            std::cout << "Warning: Baud rate not found in config file. Using default: " << baudRate << std::endl;
+            std::cout << "Warning: Baud rate not found in config file. Using default [2400]: " << baudRate << std::endl;
         if (!chCountFound)
-            std::cout << "Warning: Channel count not found in config file. Using default: " << channelCount << std::endl;
+            std::cout << "Warning: Channel count not found in config file. Using default [4]: " << channelCount << std::endl;
 }
