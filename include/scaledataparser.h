@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <cerrno>
 #include "utils.h"
+#include "serialdriver.h"
 
 class ScaleDataParser
 {
@@ -18,7 +19,7 @@ class ScaleDataParser
 
         // ----------------- Public Methods ----------------- //
         ScaleDataParser(std::string path, size_t baud);
-        ~ScaleDataParser(){ std::cout << "Deleted data parser instance!"; };
+        ~ScaleDataParser();
 
         // Return attribute methods
         size_t          baud(){ return baudRate; };
@@ -29,6 +30,8 @@ class ScaleDataParser
         // Configuration attributes
         size_t          baudRate;
         std::string     serialPort;
+        SerialDriver*   serialDriver;
+
 
         // ----------------- Private Methods ---------------- //
 

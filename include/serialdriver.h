@@ -4,10 +4,13 @@
 #include <iostream>
 #include <cerrno>
 #include <filesystem>
+#include <string>
 
 #include <fcntl.h> 
 #include <termios.h> 
 #include <unistd.h>
+
+#include "utils.h"
 
 class SerialDriver
 {
@@ -15,19 +18,18 @@ class SerialDriver
         // --------------- Public Attributes ---------------- //
 
         // ----------------- Public Methods ----------------- //
-        SerialDriver(const char* SerialPort, size_t baudRate);
-        ~SerialDriver(){ std::cout << "Deleted serial driver instance!"; };
-
-        speed_t ToBaud(size_t baudRate);
-
-        
+        SerialDriver(const char* portPath, uint32_t baudRate);
+        ~SerialDriver();
        
     private:
         // --------------- Private Attributes --------------- //
-        size_t serialPort;
+        int32_t     serialPort;
+        termios     serialCfg;
         
         // ----------------- Private Methods ---------------- //
-
+        void        OpenSerialPort(const char* portPath);
+        void        ConfigureSerialPort(uint32_t baudRate);
+        speed_t     ToBaud(uint32_t baudRate);
 
 };
 
