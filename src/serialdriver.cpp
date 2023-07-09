@@ -15,6 +15,8 @@ SerialDriver::SerialDriver(const char* portPath, uint32_t baudRate)
 
 SerialDriver::~SerialDriver()
 {
+    // Reset the old config
+    tcsetattr(serialPort, TCSANOW, &oldSerialCfg);
     // Close the serial port
     close(serialPort);
 
@@ -27,8 +29,8 @@ SerialDriver::~SerialDriver()
  */
 void SerialDriver::OpenSerialPort(const char* portPath)
 {
-    // Open the serial port in read only mode
-    serialPort = open(portPath, O_RDONLY);
+    // Open the serial port in Read & Write with no terminal control and non block
+    serialPort = open(portPath, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
     // If serial port return is lower than 0 then error occured
     if (serialPort < 0) {
@@ -49,37 +51,36 @@ void SerialDriver::OpenSerialPort(const char* portPath)
 void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
 {
     // Get the default config
-    if(tcgetattr(serialPort, &serialCfg) != 0) 
+    if(tcgetattr(serialPort, &oldSerialCfg) != 0) 
     {
         std::string errMsg = ErrorMsg(errno, "Failed to get default termios config. You should NOT be here...");
         throw errMsg;
     }
+    // Set everything to zero to only enable what is needed
+    bzero(&serialCfg, sizeof(serialCfg));
+    // Input is UTF8
+    serialCfg.c_iflag = IUTF8;
+    // No flag for output (likely will not even be used)
+    serialCfg.c_oflag = 0;
+    // 8-bits byte, enable read and ingore modem
+    serialCfg.c_cflag = CS8 | CREAD | CLOCAL;
+    // No flag for lflag (no canonical, no echo, etc.)
+    serialCfg.c_lflag = 0;
 
-    serialCfg.c_cflag &= ~PARENB; // Clear parity bit, disabling parity (most common)
-    serialCfg.c_cflag &= ~CSTOPB; // Clear stop field, only one stop bit used in communication (most common)
-    serialCfg.c_cflag &= ~CSIZE; // Clear all bits that set the data size 
-    serialCfg.c_cflag |= CS8; // 8 bits per byte (most common)
-    serialCfg.c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control (most common)
-    serialCfg.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
-
-    serialCfg.c_lflag &= ~ICANON; // Canonical mode 
-    serialCfg.c_lflag &= ~(ECHO | ECHOE | ECHONL | ISIG); // Disable echo
-
-    serialCfg.c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
-    serialCfg.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL); // Disable any special handling of received bytes
-
-    serialCfg.c_oflag &= ~OPOST; // Prevent special interpretation of output bytes (e.g. newline chars)
-    serialCfg.c_oflag &= ~ONLCR; // Prevent conversion of newline to carriage return/line feed
-
-    speed_t baudSpeedT = ToBaud(baudRate);
-
-    serialCfg.c_cc[VTIME] = 10;    
+    // Return as soon as port is ready
+    serialCfg.c_cc[VTIME] = 0;    
     serialCfg.c_cc[VMIN] = 0;
 
     // Set baud rate
-    cfsetispeed(&serialCfg, baudSpeedT);
-    cfsetospeed(&serialCfg, baudSpeedT);
-
+    cfsetispeed(&serialCfg, ToBaud(baudRate));
+    cfsetospeed(&serialCfg, ToBaud(baudRate));
+    
+    // Flush the serial port
+    if (tcflush(serialPort, TCIOFLUSH) != 0) 
+    {
+        std::string errMsg = ErrorMsg(errno, "Failed to flush serial port...");
+        throw errMsg;
+    }
     // Save config
     if (tcsetattr(serialPort, TCSANOW, &serialCfg) != 0) 
     {
@@ -94,20 +95,18 @@ void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
  */
 
 std::string SerialDriver::serialRead()
-{
+{  
+    // Declare a buffer
     char dataBuffer[256];
-
-    
+    // Read to buffer
     int ret = read(serialPort, &dataBuffer, sizeof(dataBuffer));
-
-    
-
+    // Set the last part as 0
+    dataBuffer[ret] = 0;
+    // Print the buffer
     if (ret)
     {
-        std::cout << dataBuffer << std::endl;
+        std::cout << dataBuffer;
     }
-        
-    
     return std::string(dataBuffer);
 }
 
@@ -156,8 +155,8 @@ speed_t SerialDriver::ToBaud(uint32_t baudRate)
         return B115200;
     case 230400:
         return B230400;
-    case 460800:
-        return B460800;
+    //case 460800:
+        //return B460800;
     default:
         std::string errMsg = ErrorMsg(EINVAL, "This program only support standard UNIX baud rates. Config: " + std::to_string(baudRate));
         throw errMsg;

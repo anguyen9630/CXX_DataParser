@@ -25,7 +25,7 @@ class SerialDriver
     private:
         // --------------- Private Attributes --------------- //
         int32_t     serialPort;
-        termios     serialCfg;
+        termios     serialCfg, oldSerialCfg;
         
         // ----------------- Private Methods ---------------- //
         void        OpenSerialPort(const char* portPath);
