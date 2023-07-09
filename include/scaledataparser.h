@@ -17,23 +17,20 @@ class ScaleDataParser
         // --------------- Public Attributes ---------------- //
 
         // ----------------- Public Methods ----------------- //
-        ScaleDataParser(const char* cfgFilePath);
+        ScaleDataParser(std::string path, size_t baud);
         ~ScaleDataParser(){ std::cout << "Deleted data parser instance!"; };
 
         // Return attribute methods
-        uint32_t        baud(){ return baudRate; };
-        uint8_t         channels(){ return channelCount; };
+        size_t          baud(){ return baudRate; };
         std::string     port(){ return serialPort; };
         
     private:
         // --------------- Private Attributes --------------- //
         // Configuration attributes
-        uint32_t        baudRate = 2400;
-        uint8_t         channelCount = 4;
-        std::string     serialPort = "/dev/ttyUSB0";
+        size_t          baudRate;
+        std::string     serialPort;
 
         // ----------------- Private Methods ---------------- //
-        void ParseConfig(const char* cfgFilePath);
 
 };
 

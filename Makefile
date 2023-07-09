@@ -2,6 +2,7 @@ dep_outputs := scaledataparser.o utils.o
 
 scaleparser: $(dep_outputs)
 	g++ src/main.cpp -Iinclude -o scaleparser $(dep_outputs)
+	rm *.o
 
 scaledataparser.o: utils.o
 	g++ -c src/scaledataparser.cpp -Iinclude -o scaledataparser.o
