@@ -36,9 +36,19 @@ int main(int argc, char *argv[])
         }
     }
 
-    ScaleDataParser *parser = new ScaleDataParser(configFilePath);
-    std::cout << "Initalised parser! Serial port: " << parser->port();
-    std::cout << " | Baud rate: " << parser->baud();
-    std::cout << " | No. Channels: " << parser->channels() << std::endl;
-    return 0;
+    try
+    {
+        ScaleDataParser *parser = new ScaleDataParser(configFilePath);
+        std::cout << "Initalised parser! Serial port: " << parser->port();
+        std::cout << " | Baud rate: " << parser->baud();
+        std::cout << " | No. Channels: " << std::to_string(parser->channels()) << std::endl;
+        return 0;
+    }
+    
+    catch(std::runtime_error e)
+    {
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
+    
 };

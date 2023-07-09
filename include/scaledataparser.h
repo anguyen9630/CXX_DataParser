@@ -5,9 +5,11 @@
 #include <fstream>
 #include <cstdint>
 #include <string>
+#include <cstring>
 #include <algorithm>
 #include <stdexcept>
-#include <filesystem>
+#include <cerrno>
+#include "utils.h"
 
 class ScaleDataParser
 {
@@ -19,19 +21,19 @@ class ScaleDataParser
         ~ScaleDataParser(){ std::cout << "Deleted data parser instance!"; };
 
         // Return attribute methods
-        int             baud(){ return baudRate; };
-        int             channels(){ return channelCount; };
+        uint32_t        baud(){ return baudRate; };
+        uint8_t         channels(){ return channelCount; };
         std::string     port(){ return serialPort; };
         
     private:
         // --------------- Private Attributes --------------- //
         // Configuration attributes
-        size_t          baudRate = 2400;
-        size_t          channelCount = 4;
+        uint32_t        baudRate = 2400;
+        uint8_t         channelCount = 4;
         std::string     serialPort = "/dev/ttyUSB0";
 
         // ----------------- Private Methods ---------------- //
-
+        void ParseConfig(const char* cfgFilePath);
 
 };
 
