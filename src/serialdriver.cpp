@@ -8,7 +8,6 @@ SerialDriver::SerialDriver(const char* portPath, uint32_t baudRate)
 {
     // Open the serial port
     OpenSerialPort(portPath);
-
     // Configure the serial port
     ConfigureSerialPort(baudRate);
 }
@@ -35,7 +34,7 @@ void SerialDriver::OpenSerialPort(const char* portPath)
     // If serial port return is lower than 0 then error occured
     if (serialPort < 0) {
         std::string errMsg = ErrorMsg(errno, "Failed to open the serial port: " + std::string(portPath));
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
 }
 
@@ -54,7 +53,7 @@ void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
     if(tcgetattr(serialPort, &oldSerialCfg) != 0) 
     {
         std::string errMsg = ErrorMsg(errno, "Failed to get default termios config. You should NOT be here...");
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
     // Set everything to zero to only enable what is needed
     bzero(&serialCfg, sizeof(serialCfg));
@@ -79,32 +78,41 @@ void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
     if (tcflush(serialPort, TCIOFLUSH) != 0) 
     {
         std::string errMsg = ErrorMsg(errno, "Failed to flush serial port...");
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
     // Save config
     if (tcsetattr(serialPort, TCSANOW, &serialCfg) != 0) 
     {
         std::string errMsg = ErrorMsg(errno, "Failed to configure the serial port (How did this even happen...?)");
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
 }
 
 /*
- * Read from serial port.
+ * Read from serial port and check from error
  */
-
 std::string SerialDriver::serialRead()
 {  
     // Declare a buffer
     char dataBuffer[256];
-    // Read to buffer
-    int ret = 0;
-    while (!ret)
+    // Declare a size variable to handle return
+    int receiveSize = 0;
+    
+    // While the buffer does not receive any information
+    while (!receiveSize)
     {
-        ret = read(serialPort, &dataBuffer, sizeof(dataBuffer));
+        // Read from serial port
+        receiveSize = read(serialPort, &dataBuffer, sizeof(dataBuffer));
+        
+        // If read failed, throw an error
+        if (receiveSize < 0) 
+        {
+            std::string errMsg = ErrorMsg(errno, "Reading from serial port failed!");
+            throw std::runtime_error(errMsg);
+        }
     }
     // Set the last part as 0
-    dataBuffer[ret] = 0;
+    dataBuffer[receiveSize] = 0;
     
     return std::string(dataBuffer);
 }
@@ -112,7 +120,7 @@ std::string SerialDriver::serialRead()
 
 /* 
  * Using the long number recieved, convert to baud speed type. 
- * Note: only standard UNIX baud rates are used.
+ * Custom baudrate is supported by directly using the integer to setup.
  */
 speed_t SerialDriver::ToBaud(uint32_t baudRate)
 {
@@ -157,7 +165,6 @@ speed_t SerialDriver::ToBaud(uint32_t baudRate)
     //case 460800:
         //return B460800;
     default:
-        std::string errMsg = ErrorMsg(EINVAL, "This program only support standard UNIX baud rates. Config: " + std::to_string(baudRate));
-        throw errMsg;
+        return baudRate;
     }
 }

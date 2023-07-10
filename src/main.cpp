@@ -11,7 +11,8 @@ void PrintHelp()
 int main(int argc, char *argv[])
 {
     std::string portPath = "";
-    size_t baudRate = 0;
+    int baudRate = 0;
+    
     
     // If no argument was given, print help
     if (argc < 2)
@@ -21,7 +22,7 @@ int main(int argc, char *argv[])
     }
 
     // Loop through all the command line arguments
-    for (size_t indx = 1; indx < argc; indx++)
+    for (int indx = 1; indx < argc; indx++)
     {
         std::string currentArg = std::string(argv[indx]);
         
@@ -77,9 +78,11 @@ int main(int argc, char *argv[])
     try
     {
         ScaleDataParser parser(portPath, baudRate);
-        std::cout << "Initalised parser! Serial port: " << parser.port();
-        std::cout << " | Baud rate: " << parser.baud() << std::endl;
+        std::cout << "Initalised parser! Serial port: " << parser.Port();
+        std::cout << " | Baud rate: " << parser.Baud() << std::endl;
         
+        
+        parser.RunParser();
         return 0;
     }
     

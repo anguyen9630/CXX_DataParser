@@ -9,8 +9,14 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cerrno>
+#include <thread>
+#include <mutex>
+#include <vector>
+#include <nlohmann/json.hpp>
+
 #include "utils.h"
 #include "serialdriver.h"
+
 
 class ScaleDataParser
 {
@@ -18,22 +24,38 @@ class ScaleDataParser
         // --------------- Public Attributes ---------------- //
 
         // ----------------- Public Methods ----------------- //
-        ScaleDataParser(std::string path, size_t baud);
+        ScaleDataParser(std::string path, int baud);
         ~ScaleDataParser();
 
+        void                        RunParser();
+
         // Return attribute methods
-        size_t          baud(){ return baudRate; };
-        std::string     port(){ return serialPort; };
+        int                         Baud(){ return baudRate; };
+        std::string                 Port(){ return serialPort; };
+
+        
         
     private:
         // --------------- Private Attributes --------------- //
         // Configuration attributes
-        size_t          baudRate;
-        std::string     serialPort;
-        SerialDriver*   serialDriver;
+        int                         baudRate;
+        std::string                 serialPort;
+        
+        // Serial data collection attributes
+        SerialDriver*               serialDriver; 
+        std::mutex                  rawDataMutex;
+        std::vector<std::string>    serialDataList;
+
+        // Json data attribute
+        nlohmann::json              parsedData;
+        std::mutex                  jsonDataMutex;
 
         // ----------------- Private Methods ---------------- //
-
+        void                        CollectDataFromSerial();
+        nlohmann::json              ParseDataToJson(std::vector<std::string> serialData);
+        void                        ProcessData();
+        std::vector<std::string>    SplitLines(std::string rawString);
+        
 };
 
 #endif
