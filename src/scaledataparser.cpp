@@ -44,10 +44,10 @@ ScaleDataParser::~ScaleDataParser()
  * Data after the character, if any, is also purged. 
  *  This function should be run on a separate thread.
  */
-void ScaleDataParser::CollectDataFromSerial(bool Run)
+void ScaleDataParser::CollectDataFromSerial()
 {
     // Loop indefinitely until it is terminated
-    while (Run)
+    while (true)
     {
         // Check if the previous data has been processed (always true during init)
         if (dataProcessed)
@@ -110,9 +110,9 @@ void ScaleDataParser::CollectDataFromSerial(bool Run)
 /*
  * TODO: Parses the collected data to JSON.
  */
-void ScaleDataParser::ParseDataToJson(bool Run)
+void ScaleDataParser::ParseDataToJson()
 {
-    while (Run)
+    while (true)
     {
         if (newDataReady)
         {
@@ -122,4 +122,14 @@ void ScaleDataParser::ParseDataToJson(bool Run)
         }
     }
     
+}
+
+void ScaleDataParser::RunParser()
+{
+    std::thread dataCollector(&ScaleDataParser::CollectDataFromSerial, this);
+    std::thread jsonParser(&ScaleDataParser::ParseDataToJson, this);
+
+    dataCollector.join();
+    jsonParser.join();
+
 }

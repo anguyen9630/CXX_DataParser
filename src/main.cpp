@@ -81,12 +81,7 @@ int main(int argc, char *argv[])
         std::cout << " | Baud rate: " << parser.Baud() << std::endl;
         
         
-        std::thread dataCollector(&ScaleDataParser::CollectDataFromSerial, parser, true);
-        std::thread jsonParser(&ScaleDataParser::ParseDataToJson, parser, true);
-
-        dataCollector.join();
-        jsonParser.join();
-
+        parser.RunParser();
         return 0;
     }
     

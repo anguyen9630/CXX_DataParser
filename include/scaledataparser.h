@@ -25,8 +25,9 @@ class ScaleDataParser
         ScaleDataParser(std::string path, int baud);
         ~ScaleDataParser();
         
-        void            CollectDataFromSerial(bool Run);
-        void            ParseDataToJson(bool Run);
+        void            CollectDataFromSerial();
+        void            ParseDataToJson();
+        void            RunParser();
 
         // Return attribute methods
         int             Baud(){ return baudRate; };

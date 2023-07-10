@@ -4,7 +4,7 @@ scaleparser: $(dep_outputs)
 	g++ src/main.cpp -std=c++20 -Iinclude -o scaleparser $(dep_outputs)
 	rm *.o
 
-scaledataparser.o: utils.o 
+scaledataparser.o: utils.o
 	g++ -c src/scaledataparser.cpp -std=c++20 -Iinclude -o scaledataparser.o
 
 serialdriver.o: utils.o
