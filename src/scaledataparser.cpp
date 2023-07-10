@@ -19,6 +19,7 @@ ScaleDataParser::ScaleDataParser(std::string path, int baud)
     serialDriver = new SerialDriver(path.c_str(), baud);
 
     serialDataList.clear();
+    parsedData.clear();
 
 }
 
@@ -131,8 +132,10 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
     return lineList;
 }
 
-void ScaleDataParser::ParseDataToJson(std::vector<std::string> serialData)
+nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialData)
 {
+    nlohmann::json data;
+
     // Loop through each line
     for (std::string line : serialData)
     {
@@ -158,9 +161,17 @@ void ScaleDataParser::ParseDataToJson(std::vector<std::string> serialData)
         std::string name = line.substr(0, seperatorPos);
         // Get the integer value of data
         int value = atoi(line.substr(seperatorPos+1).c_str());
-
-        std::cout << "Name: " + name + " Value: " << value << " " + unit << std::endl;
+        
+        // Assign the data using the name as key. The value and the unit is assigned to the corresponding keys
+        data[name] = {{"VALUE", value}, {"UNIT", unit}};
     }
+
+    for (auto& [key, val] : data.items())
+    {
+        std::cout << "key: " << key << ", value:" << val << '\n';
+    }
+
+    return data;
 }
 
 /*
@@ -192,8 +203,17 @@ void ScaleDataParser::ProcessData()
 
             // Further processing is safe here.
             std::vector<std::string> serialDataLines = SplitLines(serialData);
-            ParseDataToJson(serialDataLines);
-                
+            // Parse data to JSON format
+            nlohmann::json currentData = ParseDataToJson(serialDataLines);
+
+            std::cout << currentData << std::endl;
+
+            // Lock the JSON data mutex
+            jsonDataMutex.lock();
+            // Save the data
+            parsedData = currentData;
+            // Unlock the JSON data mutex
+            jsonDataMutex.unlock();
         }
     }
     

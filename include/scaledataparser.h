@@ -12,7 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <vector>
-//#include <json/json.h>
+#include <nlohmann/json.hpp>
 
 #include "utils.h"
 #include "serialdriver.h"
@@ -47,12 +47,12 @@ class ScaleDataParser
         std::vector<std::string>    serialDataList;
 
         // Json data attribute
-        //Json::Value                 parsedData;
+        nlohmann::json              parsedData;
         std::mutex                  jsonDataMutex;
 
         // ----------------- Private Methods ---------------- //
         void                        CollectDataFromSerial();
-        void                        ParseDataToJson(std::vector<std::string> serialData);
+        nlohmann::json              ParseDataToJson(std::vector<std::string> serialData);
         void                        ProcessData();
         std::vector<std::string>    SplitLines(std::string rawString);
         

@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
     std::string portPath = "";
     int baudRate = 0;
     
+    
     // If no argument was given, print help
     if (argc < 2)
     {
