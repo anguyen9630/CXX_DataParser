@@ -4,7 +4,7 @@
  * The constructor instanciate a data parser object and
  * parses the provided data to prepare for serial connection.
  */
-ScaleDataParser::ScaleDataParser(std::string path, int baud)
+ScaleDataParser::ScaleDataParser(std::string path, int baud, int interval)
 {
     // Check baud rate for validity
     if (baud < 0)
@@ -16,6 +16,7 @@ ScaleDataParser::ScaleDataParser(std::string path, int baud)
     // Initialise private attributes
     baudRate = baud;
     serialPort = path;
+    printInterval = interval;
     serialDriver = new SerialDriver(path.c_str(), baud);
 
     serialDataList.clear();
@@ -35,13 +36,13 @@ ScaleDataParser::~ScaleDataParser()
 }
 
 /*
- *  The function check if the data has been processed before collecting new data.
- *  When reading from serial, waits for the start character '/' being read collecting
- * the whole data. If the start character is not at the front, all data in front of 
- * it is purged.
- *  The function  will keep reading until the closing character '\' has been received.
+ * The function check if the data has been processed before collecting new data.
+ * When reading from serial, waits for the start character '/' being read, before 
+ * collecting the whole data. If the start character is not at the front,  
+ * all data in front of it is purged.
+ * The function  will keep reading until the closing character '\' has been received.
  * Data after the character, if any, is also purged. 
- *  This function should be run on a separate thread.
+ * NOTE: This function should be run on a separate thread.
  */
 void ScaleDataParser::CollectDataFromSerial()
 {
@@ -99,13 +100,20 @@ void ScaleDataParser::CollectDataFromSerial()
     }
 }
 
+/*
+ * Split lines of string using the '\n' character. Return
+ * a vector by keep looping and collecting lines from the string.
+ * If the string is empty then return an empty vector.
+ */
+
 std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
 {
     std::vector<std::string> lineList;
     std::string remainString = rawString;
+    // Find the first line brake
     int newLinePos = remainString.find('\n');
     
-    // If a line break found
+    // If a line break found, loop until there are no longer any line break
     while(newLinePos != std::string::npos)
     {
         // Get the line as substring
@@ -132,6 +140,13 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
     return lineList;
 }
 
+/*
+ * Parses the raw data from a vector of line strings to JSON. 
+ * The function finds the colon character ':' for assignment.
+ * If the colon character does not exist, the line is skipped.
+ * The parser then grab the name, the unit and the value of the data.
+ * And saves them in the JSON format.
+ */
 nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialData)
 {
     nlohmann::json data;
@@ -175,7 +190,8 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
 }
 
 /*
- * TODO: Parses the collected data to JSON.
+ * Process the collected raw data from serial.
+ * Note: Should be run on a separate thread.
  */
 void ScaleDataParser::ProcessData()
 {

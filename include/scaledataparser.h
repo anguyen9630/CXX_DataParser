@@ -24,7 +24,7 @@ class ScaleDataParser
         // --------------- Public Attributes ---------------- //
 
         // ----------------- Public Methods ----------------- //
-        ScaleDataParser(std::string path, int baud);
+        ScaleDataParser(std::string path, int baud, int interval);
         ~ScaleDataParser();
 
         void                        RunParser();
@@ -39,6 +39,7 @@ class ScaleDataParser
         // --------------- Private Attributes --------------- //
         // Configuration attributes
         int                         baudRate;
+        int                         printInterval;
         std::string                 serialPort;
         
         // Serial data collection attributes
