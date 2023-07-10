@@ -57,8 +57,6 @@ void ScaleDataParser::CollectDataFromSerial()
             dataMutex.lock();
             // Set data processed to false
             dataProcessed = false;
-            // Clear the data
-            serialData.clear();
 
             bool dataAssembled = false;
             bool startCollection = false;
@@ -70,17 +68,17 @@ void ScaleDataParser::CollectDataFromSerial()
                 // Read from serial
                 currentBuffer = serialDriver->serialRead();
 
-                if (!startCollection)
+                // Check for the "/" character
+                int startPos = currentBuffer.find_first_of('/');
+                // If found
+                if (startPos != std::string::npos)
                 {
-                    // Check for the "/" character
-                    int startPos = currentBuffer.find_first_of('/');
-                    // If found
-                    if (startPos != std::string::npos)
-                    {
-                        // If there are data in front of the start character, purge
-                        currentBuffer.erase(0, startPos);
-                        startCollection = true;
-                    }
+                    // Clear the data (Done here case of corrupted data and you get 2 '/')
+                    serialData.clear();
+
+                    // If there are data in front of the start character, purge
+                    currentBuffer.erase(0, startPos);
+                    startCollection = true;
                 }
                 
                 // Collect the data and check for closing character
