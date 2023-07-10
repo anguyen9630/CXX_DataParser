@@ -18,9 +18,7 @@ ScaleDataParser::ScaleDataParser(std::string path, int baud)
     serialPort = path;
     serialDriver = new SerialDriver(path.c_str(), baud);
 
-    serialData = "";
-    newDataReady = false;
-    dataProcessed = true;
+    serialDataList.clear();
 
 }
 
@@ -49,60 +47,54 @@ void ScaleDataParser::CollectDataFromSerial()
     // Loop indefinitely until it is terminated
     while (true)
     {
-        // Check if the previous data has been processed (always true during init)
-        if (dataProcessed)
+        std::string serialData = "";
+        bool dataAssembled = false;
+        bool startCollection = false;
+        std::string currentBuffer;
+        
+        // Collect data until a proper message has been collected
+        while (!dataAssembled)
         {
-            std::cout << "Collector" << std::endl;
-            // Lock the mutex
-            dataMutex.lock();
-            // Set data processed to false
-            dataProcessed = false;
+            // Read from serial
+            currentBuffer = serialDriver->serialRead();
 
-            bool dataAssembled = false;
-            bool startCollection = false;
-            std::string currentBuffer;
-            
-            // Collect data until a proper message has been collected
-            while (!dataAssembled)
+            // Check for the "/" character
+            int startPos = currentBuffer.find_first_of('/');
+            // If found
+            if (startPos != std::string::npos)
             {
-                // Read from serial
-                currentBuffer = serialDriver->serialRead();
+                // Clear the data (Done here case of corrupted data and you get 2 '/')
+                serialData.clear();
 
-                // Check for the "/" character
-                int startPos = currentBuffer.find_first_of('/');
+                // If there are data in front of the start character, purge
+                currentBuffer.erase(0, startPos);
+                startCollection = true;
+            }
+            
+            // Collect the data and check for closing character
+            if (startCollection)
+            {
+                // Check for the closing character
+                int endPos = currentBuffer.find_first_of('\\');
                 // If found
-                if (startPos != std::string::npos)
+                if (endPos != std::string::npos)
                 {
-                    // Clear the data (Done here case of corrupted data and you get 2 '/')
-                    serialData.clear();
-
-                    // If there are data in front of the start character, purge
-                    currentBuffer.erase(0, startPos);
-                    startCollection = true;
+                    // Purge all data after the character
+                    currentBuffer.erase(endPos+1);
+                    dataAssembled = true;
                 }
                 
-                // Collect the data and check for closing character
-                if (startCollection)
-                {
-                    // Check for the closing character
-                    int endPos = currentBuffer.find_first_of('\\');
-                    // If found
-                    if (endPos != std::string::npos)
-                    {
-                        // Purge all data after the character
-                        currentBuffer.erase(endPos+1);
-                        dataAssembled = true;
-                    }
-                    
-                    // Append the buffer when all of the check has been completed
-                    serialData.append(currentBuffer);
-                }
+                // Append the buffer when all of the check has been completed
+                serialData.append(currentBuffer);
             }
-            // Set that the data is ready
-            newDataReady = true;
-            // Unlock the mutex and wait until data has been processed.
-            dataMutex.unlock();
         }
+
+        // Once a proper message has been collected, lock the mutex
+        dataMutex.lock();
+        // Add the new data to the back of the vector
+        serialDataList.push_back(serialData);
+        // Unlock the mutex and repeat for the next message.
+        dataMutex.unlock();
     }
 }
 
@@ -113,18 +105,21 @@ void ScaleDataParser::ParseDataToJson()
 {
     while (true)
     {
-        
-        if (newDataReady)
+        // When there is data in the list
+        if (serialDataList.size())
         {  
-            std::cout << "Parser" << std::endl;
+
+            // Lock mutex
             dataMutex.lock();
-            std::cout << "Mutex locked" << std::endl;
-            newDataReady = false;
-            std::cout << serialData << std::endl;
-            dataProcessed = true;
-            std::cout << "Flags [ready|processed]: " << std::to_string(newDataReady) + " | " + std::to_string(dataProcessed) << std::endl;
+            // Grab the first element
+            std::string serialData = serialDataList.front();
+            // Remove the first element
+            serialDataList.erase(serialDataList.begin());
+            // Unlock the mutex
             dataMutex.unlock();
-            std::cout << "Mutex unlocked" << std::endl;
+
+            // Further processing is safe here.
+            std::cout << serialData << std::endl;
         }
     }
     
