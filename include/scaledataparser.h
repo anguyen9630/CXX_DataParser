@@ -12,6 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <vector>
+//#include <json/json.h>
 
 #include "utils.h"
 #include "serialdriver.h"
@@ -25,9 +26,7 @@ class ScaleDataParser
         // ----------------- Public Methods ----------------- //
         ScaleDataParser(std::string path, int baud);
         ~ScaleDataParser();
-        
-        void                        CollectDataFromSerial();
-        void                        ParseDataToJson();
+
         void                        RunParser();
 
         // Return attribute methods
@@ -44,11 +43,17 @@ class ScaleDataParser
         
         // Serial data collection attributes
         SerialDriver*               serialDriver; 
-        std::mutex                  dataMutex;
+        std::mutex                  rawDataMutex;
         std::vector<std::string>    serialDataList;
 
+        // Json data attribute
+        //Json::Value                 parsedData;
+        std::mutex                  jsonDataMutex;
 
         // ----------------- Private Methods ---------------- //
+        void                        CollectDataFromSerial();
+        void                        ParseDataToJson();
+        std::vector<std::string>    SplitLines(std::string rawString);
         
 };
 

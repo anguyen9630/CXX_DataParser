@@ -90,12 +90,45 @@ void ScaleDataParser::CollectDataFromSerial()
         }
 
         // Once a proper message has been collected, lock the mutex
-        dataMutex.lock();
+        rawDataMutex.lock();
         // Add the new data to the back of the vector
         serialDataList.push_back(serialData);
         // Unlock the mutex and repeat for the next message.
-        dataMutex.unlock();
+        rawDataMutex.unlock();
     }
+}
+
+std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
+{
+    std::vector<std::string> lineList;
+    std::string remainString = rawString;
+    int newLinePos = remainString.find("\n");
+    
+    // If a line break found
+    while(newLinePos != std::string::npos)
+    {
+        // Get the line as substring
+        std::string line = remainString.substr(0, newLinePos);
+        // Check if line is not empty 
+        if (!line.empty())
+        {
+            // Remove carriage return
+            line.erase( std::remove(line.begin(), line.end(), '\r'), line.end() );
+            // Add the line into the list
+            lineList.push_back(line);
+        }
+        
+        // Remove that line from the remaining string
+        remainString.erase(0, newLinePos+1);
+        // Find the next linebreak position
+        newLinePos = remainString.find("\n");
+    }
+
+    // Add the remaining string into the vector
+    if (!remainString.empty())
+        lineList.push_back(remainString);
+
+    return lineList;
 }
 
 /*
@@ -106,27 +139,29 @@ void ScaleDataParser::ParseDataToJson()
     while (true)
     {
         // Lock mutex
-        dataMutex.lock();
+        rawDataMutex.lock();
         // Get the size of the vector
         int listSize = serialDataList.size();
         // Unlock the mutex
-        dataMutex.unlock();
+        rawDataMutex.unlock();
         
         // When there is data in the list
         if (listSize)
         {  
 
             // Lock mutex
-            dataMutex.lock();
+            rawDataMutex.lock();
             // Grab the first element
             std::string serialData = serialDataList.front();
             // Remove the first element
             serialDataList.erase(serialDataList.begin());
             // Unlock the mutex
-            dataMutex.unlock();
+            rawDataMutex.unlock();
 
             // Further processing is safe here.
-            std::cout << serialData << std::endl;
+            std::vector serialDataLines = SplitLines(serialData);
+            for (int indx = 0; indx < serialDataLines.size();indx++)
+                std::cout << serialDataLines[indx] << std::endl;
         }
     }
     
