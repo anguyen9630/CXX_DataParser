@@ -105,8 +105,15 @@ void ScaleDataParser::ParseDataToJson()
 {
     while (true)
     {
+        // Lock mutex
+        dataMutex.lock();
+        // Get the size of the vector
+        int listSize = serialDataList.size();
+        // Unlock the mutex
+        dataMutex.unlock();
+        
         // When there is data in the list
-        if (serialDataList.size())
+        if (listSize)
         {  
 
             // Lock mutex
