@@ -11,7 +11,6 @@
 #include <cerrno>
 #include <thread>
 #include <mutex>
-#include <vector>
 
 #include "utils.h"
 #include "serialdriver.h"
@@ -26,26 +25,28 @@ class ScaleDataParser
         ScaleDataParser(std::string path, int baud);
         ~ScaleDataParser();
         
-        void                        CollectDataFromSerial();
-        void                        ParseDataToJson();
-        void                        RunParser();
+        void            CollectDataFromSerial();
+        void            ParseDataToJson();
+        void            RunParser();
 
         // Return attribute methods
-        int                         Baud(){ return baudRate; };
-        std::string                 Port(){ return serialPort; };
+        int             Baud(){ return baudRate; };
+        std::string     Port(){ return serialPort; };
 
         
         
     private:
         // --------------- Private Attributes --------------- //
         // Configuration attributes
-        int                         baudRate;
-        std::string                 serialPort;
+        int             baudRate;
+        std::string     serialPort;
         
         // Serial data collection attributes
-        SerialDriver*               serialDriver; 
-        std::mutex                  dataMutex;
-        std::vector<std::string>    serialDataList;
+        SerialDriver*   serialDriver; 
+        std::mutex      dataMutex;
+        std::string     serialData;
+        bool            newDataReady;
+        bool            dataProcessed;
 
 
         // ----------------- Private Methods ---------------- //
