@@ -112,7 +112,7 @@ std::string SerialDriver::serialRead()
 
 /* 
  * Using the long number recieved, convert to baud speed type. 
- * Note: only standard UNIX baud rates are used.
+ * Custom baudrate is supported by directly using the integer to setup.
  */
 speed_t SerialDriver::ToBaud(uint32_t baudRate)
 {
@@ -157,7 +157,6 @@ speed_t SerialDriver::ToBaud(uint32_t baudRate)
     //case 460800:
         //return B460800;
     default:
-        std::string errMsg = ErrorMsg(EINVAL, "This program only support standard UNIX baud rates. Config: " + std::to_string(baudRate));
-        throw errMsg;
+        return baudRate;
     }
 }
