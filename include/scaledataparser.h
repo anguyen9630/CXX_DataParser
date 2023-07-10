@@ -52,7 +52,8 @@ class ScaleDataParser
 
         // ----------------- Private Methods ---------------- //
         void                        CollectDataFromSerial();
-        void                        ParseDataToJson();
+        void                        ParseDataToJson(std::vector<std::string> serialData);
+        void                        ProcessData();
         std::vector<std::string>    SplitLines(std::string rawString);
         
 };

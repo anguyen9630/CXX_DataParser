@@ -34,7 +34,7 @@ void SerialDriver::OpenSerialPort(const char* portPath)
     // If serial port return is lower than 0 then error occured
     if (serialPort < 0) {
         std::string errMsg = ErrorMsg(errno, "Failed to open the serial port: " + std::string(portPath));
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
 }
 
@@ -53,7 +53,7 @@ void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
     if(tcgetattr(serialPort, &oldSerialCfg) != 0) 
     {
         std::string errMsg = ErrorMsg(errno, "Failed to get default termios config. You should NOT be here...");
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
     // Set everything to zero to only enable what is needed
     bzero(&serialCfg, sizeof(serialCfg));
@@ -78,13 +78,13 @@ void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
     if (tcflush(serialPort, TCIOFLUSH) != 0) 
     {
         std::string errMsg = ErrorMsg(errno, "Failed to flush serial port...");
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
     // Save config
     if (tcsetattr(serialPort, TCSANOW, &serialCfg) != 0) 
     {
         std::string errMsg = ErrorMsg(errno, "Failed to configure the serial port (How did this even happen...?)");
-        throw errMsg;
+        throw std::runtime_error(errMsg);
     }
 }
 
@@ -108,7 +108,7 @@ std::string SerialDriver::serialRead()
         if (receiveSize < 0) 
         {
             std::string errMsg = ErrorMsg(errno, "Reading from serial port failed!");
-            throw errMsg;
+            throw std::runtime_error(errMsg);
         }
     }
     // Set the last part as 0

@@ -102,7 +102,7 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
 {
     std::vector<std::string> lineList;
     std::string remainString = rawString;
-    int newLinePos = remainString.find("\n");
+    int newLinePos = remainString.find('\n');
     
     // If a line break found
     while(newLinePos != std::string::npos)
@@ -113,7 +113,7 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
         if (!line.empty())
         {
             // Remove carriage return
-            line.erase( std::remove(line.begin(), line.end(), '\r'), line.end() );
+            line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
             // Add the line into the list
             lineList.push_back(line);
         }
@@ -121,7 +121,7 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
         // Remove that line from the remaining string
         remainString.erase(0, newLinePos+1);
         // Find the next linebreak position
-        newLinePos = remainString.find("\n");
+        newLinePos = remainString.find('\n');
     }
 
     // Add the remaining string into the vector
@@ -131,10 +131,42 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
     return lineList;
 }
 
+void ScaleDataParser::ParseDataToJson(std::vector<std::string> serialData)
+{
+    // Loop through each line
+    for (std::string line : serialData)
+    {
+        // Delete all spaces from line
+        line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
+
+        // Find the separator (:)
+        int seperatorPos = line.find(':');
+        // Skip the line if not exist
+        if (seperatorPos == std::string::npos) continue;
+
+        // Note: Mass units are usually 1 or 2 characters
+        // The last character is the unit
+        
+        std::string unit = "";
+        unit.insert(unit.begin(), line.back());
+        // If the character before the unit is not a digit (i.e. a char)
+        if (!isdigit(line[line.size()-2]))
+            // Insert to the front of the unit
+            unit.insert(unit.begin(), line[line.size()-2]);
+
+        // Make a substring for the name
+        std::string name = line.substr(0, seperatorPos);
+        // Get the integer value of data
+        int value = atoi(line.substr(seperatorPos+1).c_str());
+
+        std::cout << "Name: " + name + " Value: " << value << " " + unit << std::endl;
+    }
+}
+
 /*
  * TODO: Parses the collected data to JSON.
  */
-void ScaleDataParser::ParseDataToJson()
+void ScaleDataParser::ProcessData()
 {
     while (true)
     {
@@ -159,9 +191,9 @@ void ScaleDataParser::ParseDataToJson()
             rawDataMutex.unlock();
 
             // Further processing is safe here.
-            std::vector serialDataLines = SplitLines(serialData);
-            for (int indx = 0; indx < serialDataLines.size();indx++)
-                std::cout << serialDataLines[indx] << std::endl;
+            std::vector<std::string> serialDataLines = SplitLines(serialData);
+            ParseDataToJson(serialDataLines);
+                
         }
     }
     
@@ -170,7 +202,7 @@ void ScaleDataParser::ParseDataToJson()
 void ScaleDataParser::RunParser()
 {
     std::thread dataCollector(&ScaleDataParser::CollectDataFromSerial, this);
-    std::thread jsonParser(&ScaleDataParser::ParseDataToJson, this);
+    std::thread jsonParser(&ScaleDataParser::ProcessData, this);
 
     dataCollector.join();
     jsonParser.join();
