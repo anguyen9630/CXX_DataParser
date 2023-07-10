@@ -52,6 +52,7 @@ void ScaleDataParser::CollectDataFromSerial()
         // Check if the previous data has been processed (always true during init)
         if (dataProcessed)
         {
+            std::cout << "Collector" << std::endl;
             // Lock the mutex
             dataMutex.lock();
             // Set data processed to false
@@ -114,11 +115,18 @@ void ScaleDataParser::ParseDataToJson()
 {
     while (true)
     {
+        
         if (newDataReady)
-        {
+        {  
+            std::cout << "Parser" << std::endl;
             dataMutex.lock();
+            std::cout << "Mutex locked" << std::endl;
+            newDataReady = false;
             std::cout << serialData << std::endl;
+            dataProcessed = true;
+            std::cout << "Flags [ready|processed]: " << std::to_string(newDataReady) + " | " + std::to_string(dataProcessed) << std::endl;
             dataMutex.unlock();
+            std::cout << "Mutex unlocked" << std::endl;
         }
     }
     
