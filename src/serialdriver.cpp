@@ -8,7 +8,6 @@ SerialDriver::SerialDriver(const char* portPath, uint32_t baudRate)
 {
     // Open the serial port
     OpenSerialPort(portPath);
-
     // Configure the serial port
     ConfigureSerialPort(baudRate);
 }
@@ -90,21 +89,30 @@ void SerialDriver::ConfigureSerialPort(uint32_t baudRate)
 }
 
 /*
- * Read from serial port.
+ * Read from serial port and check from error
  */
-
 std::string SerialDriver::serialRead()
 {  
     // Declare a buffer
     char dataBuffer[256];
-    // Read to buffer
-    int ret = 0;
-    while (!ret)
+    // Declare a size variable to handle return
+    int receiveSize = 0;
+    
+    // While the buffer does not receive any information
+    while (!receiveSize)
     {
-        ret = read(serialPort, &dataBuffer, sizeof(dataBuffer));
+        // Read from serial port
+        receiveSize = read(serialPort, &dataBuffer, sizeof(dataBuffer));
+        
+        // If read failed, throw an error
+        if (receiveSize < 0) 
+        {
+            std::string errMsg = ErrorMsg(errno, "Reading from serial port failed!");
+            throw errMsg;
+        }
     }
     // Set the last part as 0
-    dataBuffer[ret] = 0;
+    dataBuffer[receiveSize] = 0;
     
     return std::string(dataBuffer);
 }

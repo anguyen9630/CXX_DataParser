@@ -9,8 +9,12 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cerrno>
+#include <thread>
+#include <mutex>
+
 #include "utils.h"
 #include "serialdriver.h"
+
 
 class ScaleDataParser
 {
@@ -18,22 +22,34 @@ class ScaleDataParser
         // --------------- Public Attributes ---------------- //
 
         // ----------------- Public Methods ----------------- //
-        ScaleDataParser(std::string path, size_t baud);
+        ScaleDataParser(std::string path, int baud);
         ~ScaleDataParser();
+        
+        void            CollectDataFromSerial(bool Run);
+        void            ParseDataToJson(bool Run);
 
         // Return attribute methods
-        size_t          baud(){ return baudRate; };
-        std::string     port(){ return serialPort; };
+        int             Baud(){ return baudRate; };
+        std::string     Port(){ return serialPort; };
+
+        
         
     private:
         // --------------- Private Attributes --------------- //
         // Configuration attributes
-        size_t          baudRate;
+        int             baudRate;
         std::string     serialPort;
-        SerialDriver*   serialDriver;
+        
+        // Serial data collection attributes
+        SerialDriver*   serialDriver; 
+        std::mutex      dataMutex;
+        std::string     serialData;
+        bool            newDataReady;
+        bool            dataProcessed;
+
 
         // ----------------- Private Methods ---------------- //
-
+        
 };
 
 #endif
