@@ -190,6 +190,13 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
         std::string name = line.substr(0, seperatorPos);
         // Get the integer value of data
         int value = atoi(line.substr(seperatorPos+1).c_str());
+
+        // If the value is negative, then report that scale is not calibrated and set value to 0 
+        if (value < 0)
+        {
+            std::cout << "WARNING: Negative weight found! Uncalibrated scale!. Name: " + name + " Value: " + std::to_string(value) << std::endl;
+            value = 0;
+        }
         
         // Assign the data using the name as key. The value and the unit is assigned to the corresponding keys
         data[name] = {{"VALUE", value}, {"UNIT", unit}};
@@ -299,7 +306,7 @@ void ScaleDataParser::PrintData()
                 jsonDataMutex.unlock();
 
                 // Convert tm to char* for printing
-                char timeChar[20];
+                char timeChar[32];
                 int ret = std::strftime(timeChar, sizeof(timeChar), "Data at [%T]:", currentTimeLocal); 
 
                 std::cout << timeChar << std::endl;
