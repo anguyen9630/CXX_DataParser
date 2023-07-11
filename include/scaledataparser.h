@@ -13,11 +13,14 @@
 #include <mutex>
 #include <vector>
 #include <ctime>
-#include <nlohmann/json.hpp>
 
+#include <signal.h>
+
+#include <nlohmann/json.hpp>
 #include "utils.h"
 #include "serialdriver.h"
 
+static bool stopProgram = false;
 
 class ScaleDataParser
 {
@@ -33,7 +36,6 @@ class ScaleDataParser
         // Return attribute methods
         int                         Baud(){ return baudRate; };
         std::string                 Port(){ return serialPort; };
-
         
         
     private:
@@ -48,7 +50,7 @@ class ScaleDataParser
         std::mutex                  rawDataMutex;
         std::vector<std::string>    serialDataList;
 
-        // Json data attribute
+        // Json data attributes
         nlohmann::json              parsedData;
         std::mutex                  jsonDataMutex;
         bool                        dataReady;
@@ -61,6 +63,8 @@ class ScaleDataParser
         void                        ProcessData();
 
         void                        PrintData();
+        
+        static void                 TerminationHandler(int signum);
         
         
 };

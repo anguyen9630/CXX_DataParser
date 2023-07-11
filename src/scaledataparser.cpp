@@ -46,7 +46,7 @@ ScaleDataParser::~ScaleDataParser()
 {
     // Deleting object instances
     delete serialDriver;
-    std::cout << "Deleted data parser instance!" << std::endl; 
+    std::cout << "Deleted data parser instance." << std::endl; 
 }
 
 /*
@@ -61,7 +61,7 @@ ScaleDataParser::~ScaleDataParser()
 void ScaleDataParser::CollectDataFromSerial()
 {
     // Loop indefinitely until it is terminated
-    while (true)
+    while (!stopProgram)
     {
         std::string serialData = "";
         bool dataAssembled = false;
@@ -218,7 +218,7 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
  */
 void ScaleDataParser::ProcessData()
 {
-    while (true)
+    while (!stopProgram)
     {
         // Lock mutex
         rawDataMutex.lock();
@@ -270,7 +270,7 @@ void ScaleDataParser::PrintData()
     tm *currentTimeLocal;
     bool waitMessagePrinted = false;
 
-    while(true)
+    while(!stopProgram)
     {
         // Lock the JSON data mutex
         jsonDataMutex.lock();
@@ -333,7 +333,7 @@ void ScaleDataParser::PrintData()
                 std::cout << "--------------------------------------------------------" << std::endl;
                 std::cout << "Raw JSON:" << std::endl;
                 std::cout << currentData << std::endl;
-                std::cout << "********************************************************" << std::endl;
+                std::cout << "________________________________________________________" << std::endl;
             }
 
             // Update the clock
@@ -350,12 +350,15 @@ void ScaleDataParser::PrintData()
         
 
     }
-    // Delete the pointer
-    delete currentTimeLocal;
 }
+
+/*
+ * Wrapper function to run the parser functionality
+ */
 
 void ScaleDataParser::RunParser()
 {
+    signal(SIGINT, ScaleDataParser::TerminationHandler);
     std::thread dataCollector(&ScaleDataParser::CollectDataFromSerial, this);
     std::thread jsonParser(&ScaleDataParser::ProcessData, this);
     std::thread dataLogger(&ScaleDataParser::PrintData, this);
@@ -363,5 +366,15 @@ void ScaleDataParser::RunParser()
     dataCollector.join();
     jsonParser.join();
     dataLogger.join();
+    std::cout << "Stopped all threads." << std::endl;
+}
 
+/*
+ * Handles Ctrl-C when detected for a graceful exit
+ */
+void ScaleDataParser::TerminationHandler(int signum)
+{
+    std::cout << std::endl << "Termination signal received!" << std::endl;
+    stopProgram = true;
+    
 }
