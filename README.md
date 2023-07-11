@@ -52,9 +52,12 @@ scaleparser [-h|--help]
             [-i|--interval <time(s) [default: 10]>]
 ```
 > -h|--help : Print help on the screen.
+> 
 > -p|--port : Required. Defines the path to the serial port.
+> 
 > -b|--baud : Required. Defines the baud rate.
-> -i|--interval : Optional, defines the interval in which the program print the json data. Default at 10.
+> 
+> -i|--interval : Optional, defines the interval, in seconds, in which the program print the json data. Default at 10. Range (0,60].
 
 Reminder to set read/write permission to the serial port before using this program. This can be done with:
 ```
