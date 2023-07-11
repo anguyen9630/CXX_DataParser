@@ -12,6 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <vector>
+#include <ctime>
 #include <nlohmann/json.hpp>
 
 #include "utils.h"
@@ -50,12 +51,17 @@ class ScaleDataParser
         // Json data attribute
         nlohmann::json              parsedData;
         std::mutex                  jsonDataMutex;
+        bool                        dataReady;
 
         // ----------------- Private Methods ---------------- //
         void                        CollectDataFromSerial();
+        
         nlohmann::json              ParseDataToJson(std::vector<std::string> serialData);
-        void                        ProcessData();
         std::vector<std::string>    SplitLines(std::string rawString);
+        void                        ProcessData();
+
+        void                        PrintData();
+        
         
 };
 
