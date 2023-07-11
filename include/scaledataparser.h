@@ -43,8 +43,6 @@ class ScaleDataParser
         int                         printInterval;
         std::string                 serialPort;
         
-        // Serial data collection attributes
-        SerialDriver*               serialDriver; 
         std::mutex                  rawDataMutex;
         std::vector<std::string>    serialDataList;
 

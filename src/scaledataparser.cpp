@@ -30,7 +30,6 @@ ScaleDataParser::ScaleDataParser(std::string path, int baud, int interval)
     baudRate = baud;
     serialPort = path;
     printInterval = interval;
-    serialDriver = new SerialDriver(path.c_str(), baud);
     dataReady = false;
 
     serialDataList.clear();
@@ -44,8 +43,6 @@ ScaleDataParser::ScaleDataParser(std::string path, int baud, int interval)
  */
 ScaleDataParser::~ScaleDataParser()
 {
-    // Deleting object instances
-    delete serialDriver;
     std::cout << "Deleted data parser instance." << std::endl; 
 }
 
@@ -60,6 +57,9 @@ ScaleDataParser::~ScaleDataParser()
  */
 void ScaleDataParser::CollectDataFromSerial()
 {
+    // Create a SerialDriver instance
+    SerialDriver serialDriver(serialPort.c_str(), baudRate); 
+
     // Loop indefinitely until it is terminated
     while (true)
     {
@@ -72,7 +72,7 @@ void ScaleDataParser::CollectDataFromSerial()
         while (!dataAssembled)
         {
             // Read from serial
-            currentBuffer = serialDriver->serialRead();
+            currentBuffer = serialDriver.serialRead();
 
             // Check for the "/" character
             int startPos = currentBuffer.find_first_of('/');
