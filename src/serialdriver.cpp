@@ -19,7 +19,7 @@ SerialDriver::~SerialDriver()
     // Close the serial port
     close(serialPort);
 
-    std::cout << "Deleted serial driver instance!" << std::endl;
+    std::cout << "Deleted serial driver instance." << std::endl;
 }
 
 /*

@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
         std::cout << "Initalised parser! Serial port: " << parser.Port();
         std::cout << " | Baud rate: " << parser.Baud() << std::endl;
         
-        
         parser.RunParser();
         return 0;
     }

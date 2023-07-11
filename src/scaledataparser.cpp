@@ -46,7 +46,7 @@ ScaleDataParser::~ScaleDataParser()
 {
     // Deleting object instances
     delete serialDriver;
-    std::cout << "Deleted data parser instance!" << std::endl; 
+    std::cout << "Deleted data parser instance." << std::endl; 
 }
 
 /*
@@ -61,7 +61,7 @@ ScaleDataParser::~ScaleDataParser()
 void ScaleDataParser::CollectDataFromSerial()
 {
     // Loop indefinitely until it is terminated
-    while (true)
+    while (!stopProgram)
     {
         std::string serialData = "";
         bool dataAssembled = false;
@@ -190,6 +190,13 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
         std::string name = line.substr(0, seperatorPos);
         // Get the integer value of data
         int value = atoi(line.substr(seperatorPos+1).c_str());
+
+        // If the value is negative, then report that scale is not calibrated and set value to 0 
+        if (value < 0)
+        {
+            std::cout << "WARNING: Negative weight found! Uncalibrated scale!. Name: " + name + " Value: " + std::to_string(value) << std::endl;
+            value = 0;
+        }
         
         // Assign the data using the name as key. The value and the unit is assigned to the corresponding keys
         data[name] = {{"VALUE", value}, {"UNIT", unit}};
@@ -211,7 +218,7 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
  */
 void ScaleDataParser::ProcessData()
 {
-    while (true)
+    while (!stopProgram)
     {
         // Lock mutex
         rawDataMutex.lock();
@@ -263,7 +270,7 @@ void ScaleDataParser::PrintData()
     tm *currentTimeLocal;
     bool waitMessagePrinted = false;
 
-    while(true)
+    while(!stopProgram)
     {
         // Lock the JSON data mutex
         jsonDataMutex.lock();
@@ -299,7 +306,7 @@ void ScaleDataParser::PrintData()
                 jsonDataMutex.unlock();
 
                 // Convert tm to char* for printing
-                char timeChar[20];
+                char timeChar[32];
                 int ret = std::strftime(timeChar, sizeof(timeChar), "Data at [%T]:", currentTimeLocal); 
 
                 std::cout << timeChar << std::endl;
@@ -326,7 +333,7 @@ void ScaleDataParser::PrintData()
                 std::cout << "--------------------------------------------------------" << std::endl;
                 std::cout << "Raw JSON:" << std::endl;
                 std::cout << currentData << std::endl;
-                std::cout << "********************************************************" << std::endl;
+                std::cout << "________________________________________________________" << std::endl;
             }
 
             // Update the clock
@@ -343,12 +350,15 @@ void ScaleDataParser::PrintData()
         
 
     }
-    // Delete the pointer
-    delete currentTimeLocal;
 }
+
+/*
+ * Wrapper function to run the parser functionality
+ */
 
 void ScaleDataParser::RunParser()
 {
+    signal(SIGINT, ScaleDataParser::TerminationHandler);
     std::thread dataCollector(&ScaleDataParser::CollectDataFromSerial, this);
     std::thread jsonParser(&ScaleDataParser::ProcessData, this);
     std::thread dataLogger(&ScaleDataParser::PrintData, this);
@@ -356,5 +366,15 @@ void ScaleDataParser::RunParser()
     dataCollector.join();
     jsonParser.join();
     dataLogger.join();
+    std::cout << "Stopped all threads." << std::endl;
+}
 
+/*
+ * Handles Ctrl-C when detected for a graceful exit
+ */
+void ScaleDataParser::TerminationHandler(int signum)
+{
+    std::cout << std::endl << "Termination signal received!" << std::endl;
+    stopProgram = true;
+    
 }
