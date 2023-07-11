@@ -4,19 +4,34 @@
  * The constructor instanciate a data parser object and
  * parses the provided data to prepare for serial connection.
  */
-ScaleDataParser::ScaleDataParser(std::string path, int baud)
+ScaleDataParser::ScaleDataParser(std::string path, int baud, int interval)
 {
     // Check baud rate for validity
-    if (baud < 0)
+    if (baud <= 0)
     {
-        std::string errMsg = ErrorMsg(EINVAL, "Invalid baud rate: " + std::to_string(baud));
+        std::string errMsg = ErrorMsg(EINVAL, "Invalid baud rate. Input: " + std::to_string(baud));
+        throw std::runtime_error(errMsg);
+    }
+
+    // Make sure that the interval time is above 0 
+    if (interval <= 0)
+    {
+        std::string errMsg = ErrorMsg(EINVAL, "Interval must be greater than 0. Input: " + std::to_string(interval));
+        throw std::runtime_error(errMsg);
+    }
+    // Make sure that interval is also lower or equal than 60
+    else if (interval > 60)
+    {
+        std::string errMsg = ErrorMsg(EINVAL, "Interval must be smaller or equal to 60. Input: " + std::to_string(interval));
         throw std::runtime_error(errMsg);
     }
 
     // Initialise private attributes
     baudRate = baud;
     serialPort = path;
+    printInterval = interval;
     serialDriver = new SerialDriver(path.c_str(), baud);
+    dataReady = false;
 
     serialDataList.clear();
     parsedData.clear();
@@ -35,13 +50,13 @@ ScaleDataParser::~ScaleDataParser()
 }
 
 /*
- *  The function check if the data has been processed before collecting new data.
- *  When reading from serial, waits for the start character '/' being read collecting
- * the whole data. If the start character is not at the front, all data in front of 
- * it is purged.
- *  The function  will keep reading until the closing character '\' has been received.
+ * The function check if the data has been processed before collecting new data.
+ * When reading from serial, waits for the start character '/' being read, before 
+ * collecting the whole data. If the start character is not at the front,  
+ * all data in front of it is purged.
+ * The function  will keep reading until the closing character '\' has been received.
  * Data after the character, if any, is also purged. 
- *  This function should be run on a separate thread.
+ * NOTE: This function should be run on a separate thread.
  */
 void ScaleDataParser::CollectDataFromSerial()
 {
@@ -99,13 +114,20 @@ void ScaleDataParser::CollectDataFromSerial()
     }
 }
 
+/*
+ * Split lines of string using the '\n' character. Return
+ * a vector by keep looping and collecting lines from the string.
+ * If the string is empty then return an empty vector.
+ */
+
 std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
 {
     std::vector<std::string> lineList;
     std::string remainString = rawString;
+    // Find the first line brake
     int newLinePos = remainString.find('\n');
     
-    // If a line break found
+    // If a line break found, loop until there are no longer any line break
     while(newLinePos != std::string::npos)
     {
         // Get the line as substring
@@ -132,10 +154,17 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
     return lineList;
 }
 
+/*
+ * Parses the raw data from a vector of line strings to JSON. 
+ * The function finds the colon character ':' for assignment.
+ * If the colon character does not exist, the line is skipped.
+ * The parser then grab the name, the unit and the value of the data.
+ * And saves them in the JSON format.
+ */
 nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialData)
 {
     nlohmann::json data;
-
+    int sum = 0;
     // Loop through each line
     for (std::string line : serialData)
     {
@@ -164,18 +193,21 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
         
         // Assign the data using the name as key. The value and the unit is assigned to the corresponding keys
         data[name] = {{"VALUE", value}, {"UNIT", unit}};
+        
+        // Sum up all value that is not the TOTAL
+        if (name != "TOTAL") sum += value;
+        // If it is the total then compares the sum to the value for the VALID flag
+        else
+            data["VALID"] = sum == value;
     }
 
-    for (auto& [key, val] : data.items())
-    {
-        std::cout << "key: " << key << ", value:" << val << '\n';
-    }
-
+    
     return data;
 }
 
 /*
- * TODO: Parses the collected data to JSON.
+ * Process the collected raw data from serial.
+ * Note: Should be run on a separate thread.
  */
 void ScaleDataParser::ProcessData()
 {
@@ -206,12 +238,12 @@ void ScaleDataParser::ProcessData()
             // Parse data to JSON format
             nlohmann::json currentData = ParseDataToJson(serialDataLines);
 
-            std::cout << currentData << std::endl;
-
             // Lock the JSON data mutex
             jsonDataMutex.lock();
             // Save the data
             parsedData = currentData;
+            // Set that data is ready
+            dataReady = true;
             // Unlock the JSON data mutex
             jsonDataMutex.unlock();
         }
@@ -219,12 +251,110 @@ void ScaleDataParser::ProcessData()
     
 }
 
+/*
+ * Print the data every n seconds. The function get current time and divide it by 
+ * the interval time. If modulo = 0 then print
+ * Note: Should be run on a separate thread.
+ */
+
+void ScaleDataParser::PrintData()
+{
+    time_t previousTime;
+    tm *currentTimeLocal;
+    bool waitMessagePrinted = false;
+
+    while(true)
+    {
+        // Lock the JSON data mutex
+        jsonDataMutex.lock();
+        bool dataAvailable = dataReady;
+        jsonDataMutex.unlock();
+
+        // If data is available
+        if (dataAvailable)
+        {
+            // Get the current time
+            time_t currentTime = time(NULL);
+
+            // Make sure time is returned
+            if (currentTime == -1)
+            {
+                std::string errMsg = ErrorMsg(errno, "Could not get time...");
+                throw std::runtime_error(errMsg);
+            }
+
+            // Only print if it is a new timestamp
+            if (currentTime == previousTime) continue;
+            // Get the time in the tm struct
+            currentTimeLocal = localtime(&currentTime);
+
+            // Check to see if the second is divisible by the interval
+            if(currentTimeLocal->tm_sec % printInterval == 0)
+            {
+                // Lock the JSON data mutex
+                jsonDataMutex.lock();
+                // Make a copy of the data
+                nlohmann::json currentData = parsedData;
+                // Unlock the JSON data mutex
+                jsonDataMutex.unlock();
+
+                // Convert tm to char* for printing
+                char timeChar[20];
+                int ret = std::strftime(timeChar, sizeof(timeChar), "Data at [%T]:", currentTimeLocal); 
+
+                std::cout << timeChar << std::endl;
+
+                for (auto& [key, val] : currentData.items())
+                {
+                    // For weight data, print the name and weight
+                    if (key != "VALID")
+                    {
+                        std::string name = key;
+                        int value = val["VALUE"];
+                        std::string unit = val["UNIT"];
+                        std::cout << name << ": " << std::to_string(value) + " " + unit << std::endl; 
+                    }
+                    // If it is the valid flag then print true or false
+                    else
+                    {
+                        std::string name = key;
+                        std::string value = val ? "TRUE" : "FALSE";
+                        std::cout << name << ": " << value << std::endl;
+                    }
+                        
+                }
+                std::cout << "--------------------------------------------------------" << std::endl;
+                std::cout << "Raw JSON:" << std::endl;
+                std::cout << currentData << std::endl;
+                std::cout << "********************************************************" << std::endl;
+            }
+
+            // Update the clock
+            previousTime = currentTime;
+        }
+
+        // If data is not ready and message has not been printed
+        else if (!waitMessagePrinted)
+        {
+            // Print a message
+            std::cout << "Waiting for data..." << std::endl;
+            waitMessagePrinted = true;
+        }
+        
+
+    }
+    // Delete the pointer
+    delete currentTimeLocal;
+}
+
 void ScaleDataParser::RunParser()
 {
     std::thread dataCollector(&ScaleDataParser::CollectDataFromSerial, this);
     std::thread jsonParser(&ScaleDataParser::ProcessData, this);
+    std::thread dataLogger(&ScaleDataParser::PrintData, this);
 
     dataCollector.join();
     jsonParser.join();
+    dataLogger.join();
 
 }

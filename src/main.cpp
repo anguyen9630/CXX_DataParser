@@ -5,6 +5,7 @@ void PrintHelp()
     std::cout << "C++ Data Parser for Pacific Scale - MT-Data Trial" << std::endl;
     std::cout << "Usage: scaleparser [-h|--help]" << std::endl;
     std::cout << "                   [-p|--port <path>] [-b|--baud <number>]" << std::endl;
+    std::cout << "                   [-i|--interval <time(s) [default: 10]>]" << std::endl;
 }
 
 
@@ -12,6 +13,7 @@ int main(int argc, char *argv[])
 {
     std::string portPath = "";
     int baudRate = 0;
+    int printInterval = 10;
     
     
     // If no argument was given, print help
@@ -59,6 +61,20 @@ int main(int argc, char *argv[])
                 return -1;
             }
         }
+
+        // Check for print interval time flag
+        else if (currentArg == "-i" || currentArg == "--interval")
+        {
+            // Made sure that an interval was actually provided.
+            if (indx + 1 <= argc-1)
+                printInterval = atoi(argv[indx+1]);
+            else
+            {
+                std::cout << "Error: You did not provide an interval time." << std::endl;
+                PrintHelp();
+                return -1;
+            }
+        }
     }
 
     // Make sure that enough arguments are provided
@@ -77,7 +93,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        ScaleDataParser parser(portPath, baudRate);
+        ScaleDataParser parser(portPath, baudRate, printInterval);
         std::cout << "Initalised parser! Serial port: " << parser.Port();
         std::cout << " | Baud rate: " << parser.Baud() << std::endl;
         
