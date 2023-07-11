@@ -61,7 +61,7 @@ ScaleDataParser::~ScaleDataParser()
 void ScaleDataParser::CollectDataFromSerial()
 {
     // Loop indefinitely until it is terminated
-    while (!stopProgram)
+    while (true)
     {
         std::string serialData = "";
         bool dataAssembled = false;
@@ -218,7 +218,7 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
  */
 void ScaleDataParser::ProcessData()
 {
-    while (!stopProgram)
+    while (true)
     {
         // Lock mutex
         rawDataMutex.lock();
@@ -270,7 +270,7 @@ void ScaleDataParser::PrintData()
     tm *currentTimeLocal;
     bool waitMessagePrinted = false;
 
-    while(!stopProgram)
+    while(true)
     {
         // Lock the JSON data mutex
         jsonDataMutex.lock();
@@ -358,7 +358,6 @@ void ScaleDataParser::PrintData()
 
 void ScaleDataParser::RunParser()
 {
-    signal(SIGINT, ScaleDataParser::TerminationHandler);
     std::thread dataCollector(&ScaleDataParser::CollectDataFromSerial, this);
     std::thread jsonParser(&ScaleDataParser::ProcessData, this);
     std::thread dataLogger(&ScaleDataParser::PrintData, this);
@@ -367,14 +366,4 @@ void ScaleDataParser::RunParser()
     jsonParser.join();
     dataLogger.join();
     std::cout << "Stopped all threads." << std::endl;
-}
-
-/*
- * Handles Ctrl-C when detected for a graceful exit
- */
-void ScaleDataParser::TerminationHandler(int signum)
-{
-    std::cout << std::endl << "Termination signal received!" << std::endl;
-    stopProgram = true;
-    
 }

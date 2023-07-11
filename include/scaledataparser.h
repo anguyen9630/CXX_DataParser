@@ -20,8 +20,6 @@
 #include "utils.h"
 #include "serialdriver.h"
 
-static bool stopProgram = false;
-
 class ScaleDataParser
 {
     public:
@@ -63,8 +61,6 @@ class ScaleDataParser
         void                        ProcessData();
 
         void                        PrintData();
-        
-        static void                 TerminationHandler(int signum);
         
         
 };
