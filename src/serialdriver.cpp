@@ -98,9 +98,13 @@ std::string SerialDriver::serialRead()
     // Declare a size variable to handle return
     int receiveSize = 0;
     
+    bool terminateCalled = false;
     // While the buffer does not receive any information
-    while (!receiveSize && !terminateProgram)
+    while (!receiveSize && !terminateCalled)
     {
+        termFlagMutex.lock();
+        terminateCalled = terminateProgram;
+        termFlagMutex.unlock();
         // Read from serial port
         receiveSize = read(serialPort, &dataBuffer, sizeof(dataBuffer));
         

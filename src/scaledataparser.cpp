@@ -59,18 +59,27 @@ void ScaleDataParser::CollectDataFromSerial()
 {
     // Create a SerialDriver instance
     SerialDriver serialDriver(serialPort.c_str(), baudRate); 
+    bool terminateCalled = false;
 
     // Loop indefinitely until it is terminated
-    while (!terminateProgram)
+    while (!terminateCalled)
     {
+        termFlagMutex.lock();
+        terminateCalled = terminateProgram;
+        termFlagMutex.unlock();
+
         std::string serialData = "";
         bool dataAssembled = false;
         bool startCollection = false;
         std::string currentBuffer;
         
         // Collect data until a proper message has been collected
-        while (!dataAssembled && !terminateProgram)
+        while (!dataAssembled && !terminateCalled)
         {
+            termFlagMutex.lock();
+            terminateCalled = terminateProgram;
+            termFlagMutex.unlock();
+
             // Read from serial
             currentBuffer = serialDriver.serialRead();
 
@@ -126,10 +135,17 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
     std::string remainString = rawString;
     // Find the first line brake
     int newLinePos = remainString.find('\n');
+
+    bool terminateCalled = false;
     
     // If a line break found, loop until there are no longer any line break
-    while(newLinePos != std::string::npos && !terminateProgram)
+    while(newLinePos != std::string::npos && !terminateCalled)
     {
+
+        termFlagMutex.lock();
+        terminateCalled = terminateProgram;
+        termFlagMutex.unlock();
+
         // Get the line as substring
         std::string line = remainString.substr(0, newLinePos);
         // Check if line is not empty 
@@ -218,8 +234,15 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
  */
 void ScaleDataParser::ProcessData()
 {
-    while (!terminateProgram)
+    bool terminateCalled = false;
+
+    // Loop indefinitely until it is terminated
+    while (!terminateCalled)
     {
+        termFlagMutex.lock();
+        terminateCalled = terminateProgram;
+        termFlagMutex.unlock();
+
         // Lock mutex
         rawDataMutex.lock();
         // Get the size of the vector
@@ -270,8 +293,15 @@ void ScaleDataParser::PrintData()
     tm *currentTimeLocal;
     bool waitMessagePrinted = false;
 
-    while(!terminateProgram)
+    bool terminateCalled = false;
+
+    // Loop indefinitely until it is terminated
+    while (!terminateCalled)
     {
+        termFlagMutex.lock();
+        terminateCalled = terminateProgram;
+        termFlagMutex.unlock();
+
         // Lock the JSON data mutex
         jsonDataMutex.lock();
         bool dataAvailable = dataReady;
