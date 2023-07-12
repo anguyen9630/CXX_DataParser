@@ -61,7 +61,7 @@ void ScaleDataParser::CollectDataFromSerial()
     SerialDriver serialDriver(serialPort.c_str(), baudRate); 
 
     // Loop indefinitely until it is terminated
-    while (true)
+    while (!terminateProgram)
     {
         std::string serialData = "";
         bool dataAssembled = false;
@@ -69,7 +69,7 @@ void ScaleDataParser::CollectDataFromSerial()
         std::string currentBuffer;
         
         // Collect data until a proper message has been collected
-        while (!dataAssembled)
+        while (!dataAssembled && !terminateProgram)
         {
             // Read from serial
             currentBuffer = serialDriver.serialRead();
@@ -128,7 +128,7 @@ std::vector<std::string> ScaleDataParser::SplitLines(std::string rawString)
     int newLinePos = remainString.find('\n');
     
     // If a line break found, loop until there are no longer any line break
-    while(newLinePos != std::string::npos)
+    while(newLinePos != std::string::npos && !terminateProgram)
     {
         // Get the line as substring
         std::string line = remainString.substr(0, newLinePos);
@@ -218,7 +218,7 @@ nlohmann::json ScaleDataParser::ParseDataToJson(std::vector<std::string> serialD
  */
 void ScaleDataParser::ProcessData()
 {
-    while (true)
+    while (!terminateProgram)
     {
         // Lock mutex
         rawDataMutex.lock();
@@ -270,7 +270,7 @@ void ScaleDataParser::PrintData()
     tm *currentTimeLocal;
     bool waitMessagePrinted = false;
 
-    while(true)
+    while(!terminateProgram)
     {
         // Lock the JSON data mutex
         jsonDataMutex.lock();
