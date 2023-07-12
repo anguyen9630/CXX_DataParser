@@ -99,7 +99,7 @@ std::string SerialDriver::serialRead()
     int receiveSize = 0;
     
     // While the buffer does not receive any information
-    while (!receiveSize)
+    while (!receiveSize && !terminateProgram)
     {
         // Read from serial port
         receiveSize = read(serialPort, &dataBuffer, sizeof(dataBuffer));

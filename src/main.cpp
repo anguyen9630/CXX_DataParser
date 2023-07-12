@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
 
     try
     {
+        setupSignalHandling();
         ScaleDataParser parser(portPath, baudRate, printInterval);
         std::cout << "Initalised parser! Serial port: " << parser.Port();
         std::cout << " | Baud rate: " << parser.Baud() << std::endl;
